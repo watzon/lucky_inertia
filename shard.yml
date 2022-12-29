@@ -1,0 +1,20 @@
+name: lucky_inertia
+version: 0.1.0
+
+authors:
+  - Chris Watson <cawatson1993@gmail.com>
+
+dependencies:
+  lucky:
+    github: luckyframework/lucky
+    version: ~> 1.0.0-rc1
+  lucky_task:
+    github: luckyframework/lucky_task
+    version: ~> 0.1.1
+  habitat:
+    github: luckyframework/habitat
+    version: ~> 0.4.7
+
+crystal: 1.6.2
+
+license: MIT

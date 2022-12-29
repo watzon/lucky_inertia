@@ -25,13 +25,22 @@ module Inertia
         payload = make_page(component, props, context)
         json_response(payload.to_json, context)
       else
-        # return render_ssr if Inertia.settings.ssr_enabled?
+        return render_ssr(component, props, context) if Inertia.settings.ssr_enabled?
         html_response(component, props, context)
       end
     end
 
-    private def render_ssr
-      # Do render
+    private def render_ssr(component, props, context)
+      page = make_page(component, props, context)
+      uri = URI.parse(Inertia.settings.ssr_url + "/render")
+
+      res = HTTP::Client.post(uri, body: page.to_json, headers: HTTP::Headers{"Content-Type" => "application/json"})
+      json = JSON.parse(res.body)
+
+      head = json["head"].as_a.map(&.as_s)
+      body = json["body"].as_s
+
+      html_response(component, props, context, head: head, content: body)
     end
 
     private def make_page(component, props, context)
@@ -53,9 +62,9 @@ module Inertia
       )
     end
 
-    private def html_response(component, props, context)
+    private def html_response(component, props, context, head = [] of String, content = nil)
       page = make_page(component, props, context)
-      view = ROOT_LAYOUT.new(context: context, page: page.to_json)
+      view = ROOT_LAYOUT.new(context: context, page: page.to_json, head: head, content: content)
       Lucky::TextResponse.new(
         context,
         "text/html",

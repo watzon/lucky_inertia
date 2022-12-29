@@ -51,6 +51,7 @@ To use Inertia.js you need a server side adapter (like this) and a client side a
       mix
         .setPublicPath("public")
         .js("src/js/app.js", "js")
+        .alias({ '@': path.resolve('src/js') })
         .sourceMaps()
         .vue()
     ```

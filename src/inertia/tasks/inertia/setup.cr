@@ -109,7 +109,7 @@ class Inertia::Setup < BaseTask
   CRYSTAL
 
   DEFAULT_ACTION = <<-CRYSTAL
-    class App::Index < BrowserAction
+    class App::Index < InertiaAction
       get "/" do
         inertia "Index"
       end
@@ -131,6 +131,8 @@ class Inertia::Setup < BaseTask
       include Lucky::HTMLPage
 
       needs page : String
+      needs content : String?
+      needs head : Array(String)
 
       def page_title
         "Inertia"
@@ -139,11 +141,26 @@ class Inertia::Setup < BaseTask
       def render
         html_doctype
 
-        html lang: "en" do
-          mount Shared::LayoutHead, page_title: page_title
+        head do
+          head.each { |tag| raw tag }
 
+          utf8_charset
+          title "My App - #{page_title}"
+          css_link asset("css/app.css")
+          js_link asset("js/app.js"), defer: "true"
+
+          csrf_meta_tags
+          responsive_meta_tag
+          live_reload_connect_tag
+        end
+
+        html lang: "en" do
           body do
-            div id: "app", data_page: page
+            if content = self.content
+              raw content
+            else
+              div id: "app", data_page: page
+            end
           end
         end
       end

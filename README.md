@@ -48,6 +48,10 @@ To use Inertia.js you need a server side adapter (like this) and a client side a
 
 6. Be sure to update your build file to work with the framework you're using. With Vue3 and Laravel Mix as an example:
     ```js
+      const path = require("path")
+      
+      //..
+
       mix
         .setPublicPath("public")
         .js("src/js/app.js", "js")
@@ -126,13 +130,13 @@ SSR support requires some changes to your codebase that are best handled manuall
 
     mix
       .options({ manifest: false })
-      .js('resources/js/ssr.js', 'public/js')
+      .js('src/js/ssr.js', 'public/js')
       .vue({ version: 3, options: { optimizeSSR: true } })
-      .alias({ '@': path.resolve('resources/js') })
+      .alias({ '@': path.resolve('src/js') })
       .webpackConfig({
         target: 'node',
         externals: [webpackNodeExternals()],
-      }
+      })
     ```
 
 7. Enable SSR in your `config/inertia.cr` file by setting `settings.ssr_enabled = true`

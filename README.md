@@ -70,6 +70,104 @@ end
 
 The above will tell the Inertia.js frontend to open the page registered as `TestPage`. Using the default installation this will be the file located at `src/js/Pages/TestPage.{vue,svelte,jsx}`.
 
+### SSR
+
+SSR support requires some changes to your codebase that are best handled manually. Most of the changes are detailed in the [Server Side Rendering](https://inertiajs.com/server-side-rendering) side of the Inertia documentation, so I'd recommend following the instructions there to get the SSR components installed for your framework of choice. Listed below are the instructions specifically for Vue.
+
+1. Install the server-side rendering dependencies
+    ```shell
+    yarn add @vue/server-renderer
+    ```
+
+2. Install the `@inertiajs/server` package to add SSR support to Inertia itself
+    ```shell
+    yarn add @inertiajs/server
+    ```
+
+3. Create the SSR JS entrypoint
+    ```shell
+    touch src/js/ssr.js
+    ```
+
+4. This file will look a lot like your `inertia.js` file, with the main exception being this file will not run in the browser. Add anything that is in `inertia.js` to this file as well, just make sure anything you're using is SSR compatible.
+    ```js
+    import { createSSRApp, h } from 'vue'
+    import { renderToString } from '@vue/server-renderer'
+    import { createInertiaApp } from '@inertiajs/inertia-vue3'
+    import createServer from '@inertiajs/server'
+
+    createServer((page) => createInertiaApp({
+      page,
+      render: renderToString,
+      resolve: name => require(`./Pages/${name}`),
+      setup({ app, props, plugin }) {
+        return createSSRApp({
+          render: () => h(app, props),
+        }).use(plugin)
+      },
+    }))
+    ```
+
+5. Install `webpack-node-externals`
+    ```shell
+    yarn add webpack-node-externals --dev
+    ```
+
+6. Create `webpack.ssr.mix.js`. This is going to be your SSR pipeline entrypoint.
+    ```shell
+    touch webpack.ssr.mix.js
+    ```
+
+    Here is an example of what you should have in this file:
+    ```js
+    const path = require('path')
+    const mix = require('laravel-mix')
+    const webpackNodeExternals = require('webpack-node-externals')
+
+    mix
+      .options({ manifest: false })
+      .js('resources/js/ssr.js', 'public/js')
+      .vue({ version: 3, options: { optimizeSSR: true } })
+      .alias({ '@': path.resolve('resources/js') })
+      .webpackConfig({
+        target: 'node',
+        externals: [webpackNodeExternals()],
+      }
+    ```
+
+7. Enable SSR in your `config/inertia.cr` file by setting `settings.ssr_enabled = true`
+
+The following steps are optional, but really help streamline your build pipeline.
+
+8. Install `concurrently`
+    ```shell
+    yarn add concurrently --dev
+    ```
+
+9. Add the following to the `scripts` section of your `package.json`, overwriting what's there currently
+    ```json
+    {
+      // ...
+      "scripts": {
+        "dev": "concurrently \"yarn run watch:base\" \"yarn run watch:ssr\"",
+        "dev:base": "yarn run mix",
+        "dev:ssr": "yarn run mix --mix-config=webpack.ssr.mix.js",
+        "watch": "concurrently \"yarn run watch:base\" \"yarn run watch:ssr\"",
+        "watch:base": "yarn run mix watch",
+        "watch:ssr": "yarn run mix watch --mix-config=webpack.ssr.mix.js",
+        "prod": "yarn run mix --production && yarn run mix --production --mix-config=webpack.ssr.mix.js"
+      }
+      // ...
+    }
+    ```
+
+10. Add the following line to `Procfile` and `Procfile.dev`
+      ```procfile
+      ssr: node public/js/ssr.js
+      ```
+
+And that's it. A lot of steps, but you should now have a working Vue3 SSR application.
+
 ## Contributing
 
 1. Fork it (<https://github.com/watzon/lucky_inertia/fork>)
